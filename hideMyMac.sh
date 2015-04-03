@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [ -e ${1} ]; then
-  echo "The first argument is required"
-  exit 1
-fi
-
 sendError () {
   echo $1
   exit 1
@@ -46,6 +41,11 @@ genNewMACAddr () {
   # THX to [serverfault.com/users/1375/womble](serverfault/u/womble)
   openssl rand -hex 6 | sed 's/\(..\)/\1:/g; s/.$//'
 }
+
+if [ -e ${1} ]; then
+  echo "The first argument is required"
+  exit 1
+fi
 
 if ! [ $(doesThisInterfaceExsist $1) ]; then
   sendError 'Invalid interface'
