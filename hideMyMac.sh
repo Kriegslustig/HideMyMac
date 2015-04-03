@@ -1,36 +1,43 @@
 #!/bin/bash
 
 sendError () {
-  echo $1
+  echo "FAILED: ${1}"
+  setHostname ${oldHostname}
   exit 1
+}
+
+hasFailed () {
+  if ! [ $? -eq 0 ]; then
+    sendError $1
+  fi
 }
 
 displayNetworkStatus () {
   echo "New inteface:"
-  echo "Hostname: $(hostname)"
-  ifconfig $1
+  echo "  Hostname: $(hostname)"
+  echo "  MAC-Address: $(getCurrentMACAddr ${1})"
 }
 
 showHowToReset () {
-  echo "
-  To reset your ${interface} do:"
-  echo "sudo sh hideMyMac.sh ${interface} ${oldMACAddr} $(hostname)"
+  echo "\nTo reset your ${interface} do:"
+  echo "  sudo sh hideMyMac.sh ${interface} ${oldMACAddr} ${oldHostname}\n"
 }
 
 doesThisInterfaceExsist () {
   ifconfig $1 &> /dev/null
-  if [ $? -eq 0 ]; then
-    echo true
+  if ! [ $? -eq 0 ]; then
+    sendError 'No such interface'
   fi
 }
 
 getCurrentMACAddr () {
   findEtherReg='[[:alnum:]][[:alnum:]]\:[[:alnum:]][[:alnum:]]\:[[:alnum:]][[:alnum:]]\:[[:alnum:]][[:alnum:]]\:[[:alnum:]][[:alnum:]]\:[[:alnum:]][[:alnum:]]'
-  ifconfig "${1}" | grep -o ${findEtherReg}
+  ifconfig ${1} | grep -o ${findEtherReg}
 }
 
 setMACAddr () {
-  ifconfig $1 ether $2
+  ifconfig ${1} ether ${2}
+  hasFailed 'Unable to set MAC Address, the interface might be down'
 }
 
 setHostname () {
@@ -42,17 +49,15 @@ genNewMACAddr () {
   openssl rand -hex 6 | sed 's/\(..\)/\1:/g; s/.$//'
 }
 
-if [ -e ${1} ]; then
-  echo "The first argument is required"
-  exit 1
+interface=${1}
+oldMACAddr=$(getCurrentMACAddr ${interface})
+oldHostname=$(hostname)
+
+if [ -e ${interface} ]; then
+  sendError "The first argument is required"
 fi
 
-if ! [ $(doesThisInterfaceExsist $1) ]; then
-  sendError 'Invalid interface'
-fi
-
-interface=$1
-oldMACAddr=$(getCurrentMACAddr $interface)
+doesThisInterfaceExsist $interface
 
 if ! [ -e $2 -a -e $3 ]; then
   if [ $2 = ${oldMACAddr} ]; then
