@@ -5,6 +5,23 @@ if [ -e ${1} ]; then
   exit 1
 fi
 
+sendError () {
+  echo $1
+  exit 1
+}
+
+displayNetworkStatus () {
+  echo "New inteface:"
+  echo "Hostname: $(hostname)"
+  ifconfig $1
+}
+
+showHowToReset () {
+  echo "
+  To reset your ${interface} do:"
+  echo "sudo sh hideMyMac.sh ${interface} ${oldMACAddr} $(hostname)"
+}
+
 doesThisInterfaceExsist () {
   ifconfig $1 &> /dev/null
   if [ $? -eq 0 ]; then
@@ -31,8 +48,7 @@ genNewMACAddr () {
 }
 
 if ! [ $(doesThisInterfaceExsist $1) ]; then
-  echo 'Invalid interface'
-  exit 1
+  sendError 'Invalid interface'
 fi
 
 interface=$1
@@ -40,15 +56,12 @@ oldMACAddr=$(getCurrentMACAddr $interface)
 
 if ! [ -e $2 -a -e $3 ]; then
   if [ $2 = ${oldMACAddr} ]; then
-    echo "MAC Address has to change"
-    exit 1
+    sendError "MAC Address has to change"
   fi
   setMACAddr $interface $2
   setHostname $3
 else
-  echo "
-  To reset your ${interface} do:"
-  echo "sudo sh hideMyMac.sh ${interface} ${oldMACAddr} $(hostname)"
+  showHowToReset
   setMACAddr ${interface} $(genNewMACAddr)
   setHostname '_'
 fi
@@ -56,7 +69,5 @@ fi
 while [[ -n $(getCurrentMACAddr ${interface} | grep ${oldMACAddr}) ]]; do
   sleep 0.1
 done
-echo "New inteface:"
-echo "Hostname: $(hostname)"
-ifconfig $interface
+displayNetworkStatus $interface
 exit 0
