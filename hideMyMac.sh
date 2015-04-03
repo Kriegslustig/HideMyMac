@@ -5,14 +5,6 @@ if [ -e ${1} ]; then
   exit 1
 fi
 
-killInterface () {
-  ifconfig $1 down &> /dev/null
-}
-
-reviveInterface () {
-  ifconfig $1 up &> /dev/null
-}
-
 doesThisInterfaceExsist () {
   ifconfig $1 &> /dev/null
   if [ $? -eq 0 ]; then
@@ -45,18 +37,16 @@ fi
 
 interface=$1
 
-killInterface $interface
 if ! [ -e $2 -a -e $3 ]; then
   setMACAddr $interface $2
   setHostname $3
 else
-  echo "To reset your ${interface} do:"
-  echo "sudo sh hideMyMac.sh ${interface} $(getCurrentMACAddr $interface) $(hostname)
-  "
+  echo "
+  To reset your ${interface} do:"
+  echo "sudo sh hideMyMac.sh ${interface} $(getCurrentMACAddr $interface) $(hostname)"
   setMACAddr ${interface} $(genNewMACAddr)
   setHostname '_'
 fi
-reviveInterface $interface
 
 sleep 2
 echo "New inteface:"
